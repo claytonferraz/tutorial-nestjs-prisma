@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Categoria {
+  id    String  @id @default(uuid())
+  nome  String
+  descricao String?
+  cursos Curso[]
+  updatedAt DateTime @updatedAt
+}
+
+model Curso {
+  id    String  @id @default(uuid())
+  nome     String
+  ementa   String?
+  categoria    Categoria    @relation(fields: [categoriaId], references: [id])
+  categoriaId  String
+  updatedAt DateTime @updatedAt
+}
