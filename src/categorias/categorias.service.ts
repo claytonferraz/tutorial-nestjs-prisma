@@ -1,26 +1,72 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { CategoriaNotFoundException } from './exceptions/categoriaNotFound.exception';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { PrismaError } from '../utils/prismaError';
 
 @Injectable()
 export class CategoriasService {
-  create(createCategoriaDto: CreateCategoriaDto) {
-    return 'This action adds a new categoria';
+  constructor(private readonly prismaService: PrismaService) {}
+  async create(createCategoriaDto: CreateCategoriaDto) {
+    return this.prismaService.categoria.create({
+      data: createCategoriaDto,
+    });
   }
 
   findAll() {
-    return `This action returns all categorias`;
+    return this.prismaService.categoria.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} categoria`;
+  async findOne(id: string) {
+    const categoria = await this.prismaService.categoria.findUnique({
+      where: {
+        id,
+      },
+    });
+    if (!categoria) {
+      throw new CategoriaNotFoundException(id);
+    }
+    return categoria;
   }
 
-  update(id: number, updateCategoriaDto: UpdateCategoriaDto) {
-    return `This action updates a #${id} categoria`;
+  async update(id: string, updateCategoriaDto: UpdateCategoriaDto) {
+    try {
+      return await this.prismaService.categoria.update({
+        data: {
+          ...updateCategoriaDto,
+          id: undefined,
+        },
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === PrismaError.RecordDoesNotExist
+      ) {
+        throw new CategoriaNotFoundException(id);
+      }
+      throw error;
+    }
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} categoria`;
+  async remove(id: string) {
+    try {
+      return this.prismaService.categoria.delete({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === PrismaError.RecordDoesNotExist
+      ) {
+        throw new CategoriaNotFoundException(id);
+      }
+      throw error;
+    }
   }
 }
